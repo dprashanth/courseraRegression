@@ -1,0 +1,133 @@
+# Motor Trend: Will type of transmission have an impact on the MPG of a car?
+
+
+## Executive Summary
+Motor Trend is interested interested in exploring the relationship between a set of variables and miles per gallon (MPG). For this, we analyze dataset mtcars and will answer the below two questions specifically:
+.	"Is an automatic or manual transmission better for MPG"
+.	"Quantify the MPG difference between automatic and manual transmissions"
+
+Based on the linear regression analysis we conclude that the MPG for cars with manual transmission is better than the cars with automatic transmission. The mpg increases by 1.8 when manual transmission is used instead of automatic transmission.
+
+### I. Data Processing
+
+Loading mtcars dataset and transforming subset of variables into factor variables.
+Transformation of variables to factor variables is decided by looking at the various values the variables take
+
+```{r, echo=TRUE}
+data(mtcars)
+mtcars$cyl  <-  factor(mtcars$cyl)
+mtcars$vs   <-  factor(mtcars$vs)
+mtcars$am   <-  factor(mtcars$am, labels = c("Automatic","Manual"))
+mtcars$gear <-  factor(mtcars$gear)
+mtcars$carb <-  factor(mtcars$carb)
+
+```
+
+### II. Exploratory Analysis
+
+As part of exploratory analysis we explore relationship among all the variables in the mtcar dataset. 
+
+Inaddition to this, since we are interested in outlining relationship between MPG and type of transmission, we use a box plot to understand this better.
+
+``` {r, echo=TRUE}
+pairs(mtcars, panel=panel.smooth, main = "mtcars data", col=3)
+
+boxplot(mpg ~ am, data = mtcars, col=c("red","blue"), ylab= "MPG", xlab= "Transmission Type")
+
+```
+
+### Observations from Exploratory Analysis
+
+**From the first plot it is clear that there is a strong correlation between mpg and variables cyl, dsp, hp,wt, vs and am**
+
+**From the box plot, it is clears that the mpg from manual transimission is higher than that of automatic transmission**
+
+### III. Regression Analysis
+As a next step, we build linear model with all variables to begin with and then use the function step to select the best model. 
+
+The step function will select the best model by using lm function repeatedly to build multiple models. The AIC algorithm is used by the step function which ensures relevant variables are included while predicting the mpg and others are omitted.
+
+After the model is selected an analysis of residuals is performed as well.
+
+#### Initial Model
+
+``` {r, echo = TRUE }
+
+initialModel <- lm(mpg ~., data = mtcars)
+bestModel <- step(initialModel, direction = "both", trace = 0)
+summary(bestModel)
+
+```
+
+**Based on the bestModel's summary, variables, cyl, hp, wt and am are used as predictors.**
+
+**The  Adjusted R-squared of the best model is 0.8401 which indicated 84% of the variability is explained by the model.**
+
+**Now we compare the bestModel with a model where only am variable is used as a predictor.**
+
+**The model with only as am as the predictor is compared with the bestModel using anova function to understand if the additional predictors - cyl, hp and wt have +ve impact on the accuracy of the model.**
+
+``` {r, echo = TRUE }
+
+modelAM <- lm(mpg ~ am, data=mtcars)
+anova(modelAM,bestModel)
+
+```
+
+**Based on the results of anova, the bestModel with predictors cyl, hp, wt and am have significant p-value and hence we reject the null hypothesis that the predictors cyl, hp and wt don't contribute to the accuracy of the model.**
+
+
+### IV. Model Diagnostics and Residuals
+
+We perform diagnostics on the finalized regression model to understand the residuals and leverage points that help discover any problems in the model
+
+``` {r, echo = TRUE }
+
+par(mfrow=c(2,2))
+plot(bestModel)
+
+```
+
+**Below are the observations from the above plots**
+
+**1. In the Residuals vs Fitted plots, the points are randomly scattered on the plot which verifies the independence conditiin..**
+
+
+**2. The Normal Q-Q plot consists of the points which mostly fall on the line indicating that the residuals are normally distributed.**
+
+**3.The Scale-Location plot consists of points scattered in a constant band pattern, indicating constant variance.**
+
+**4. There are some distinct points of interest (outliers or leverage points) in the top right of the plots that may indicate values of increased leverage of outliers.**
+
+#### In the below section we use the influence measures - hatvalues to maesure the leaverage and dfbeta to indicate the change in coefficients when the outliers are removed
+
+``` {r, echo = TRUE }
+
+leverage <- hatvalues(bestModel)
+tail(sort(leverage),3)
+
+influential <- dfbetas(bestModel)
+tail(sort(influential[,6]),3)
+
+```
+
+### V. Conclusion
+
+``` {r, echo = TRUE }
+summary(bestModel)$coef
+
+```
+
+**Based on the regression analysis done, following conclusions can be drawn**
+
+**Manual Transmission is better for MPG**
+
+**Cars with manual transmission get 1.8 more miles per gallon compared to cars with automatic transmission (adjusted for CYL, HP and WT regressors)**
+
+**mpg decreases by 2.496 for every 1000 lbs increase in wt (adjusted for other regressors)**
+
+**mpg decreases by 0.032 for every unit increase in hp (adjusted for other regressors)**
+
+**mpg decreases by 3.031 and 2.163 as CYL increases from 4 to 6 and from 6 to 8 (adjusted for other regressors)**
+
+
